@@ -3,7 +3,7 @@ import streamlit as st
 # ИСПРАВЛЕННАЯ Страница Входа
 def login_page():
     st.header("Добро пожаловать!")
-    username = st.text_input("Введите ваше имя (Например, Иван)")
+    username = st.text_input("Введите ваше имя (Например, Константинов Ярослав)")
 
     if st.button("Войти"):
         if username:
@@ -193,3 +193,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
