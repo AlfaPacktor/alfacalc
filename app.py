@@ -1,10 +1,11 @@
 import streamlit as st
+import pyperclip
 
 # ИСПРАВЛЕННАЯ Страница Входа
 def login_page():
     st.header("Добро пожаловать!")
     # Поле для ввода имени (логина). Оно теперь единственное.
-    username = st.text_input("Введите ваше имя (Например, Константинов Ярослав)")
+    username = st.text_input("Введите ваше имя (Например, Иван Петров)")
 
     # Добавляем кнопку "Войти"
     if st.button("Войти"):
@@ -77,7 +78,7 @@ def apply_styles():
                 text-align: center;
             }
             div.stButton > button:hover {
-                background-color: #F0F0F0;
+                background-color: #F5F5F5;
                 border-color: #AAAAAA;
             }
             .stToggle { font-family: 'Calibri', sans-serif; color: #000000; }
@@ -141,6 +142,18 @@ def reset_all():
     user_state['toggles'] = {}
     user_state['report_text'] = ""
 
+def copy_report():
+    # Функция для копирования отчета в буфер обмена
+    user_state = get_user_state()
+    report_text = user_state.get('report_text', "")
+    if report_text:
+        try:
+            pyperclip.copy(report_text)
+            st.success("Отчет скопирован в буфер обмена!")
+        except:
+            st.error("Не удалось скопировать отчет. Попробуйте скопировать вручную.")
+    else:
+        st.warning("Нет отчета для копирования.")
 
 # --- Логика генерации отчета ---
 def generate_report_text(main_product, toggles):
@@ -237,8 +250,14 @@ def report_page():
         help="Нажмите на текст, затем Ctrl+C (или Cmd+C), чтобы скопировать"
     )
 
-    # 4. Кнопку "Сбросить" оставляем, но ей больше не нужны колонки.
-    st.button("Сбросить", on_click=reset_all)
+    # 4. Добавляем кнопки в две колонки
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.button("Скопировать", on_click=copy_report)
+    
+    with col2:
+        st.button("Сбросить", on_click=reset_all)
 
 
 # --- Главная функция приложения ---
