@@ -161,13 +161,14 @@ def copy_to_clipboard_component(text_to_copy):
     import random
     component_id = f"copy_component_{random.randint(1000, 9999)}"
     
+    # Экранируем текст для JavaScript
+    escaped_text = text_to_copy.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n').replace('\r', '\\r')
+    
     copy_js = f"""
     <div id="{component_id}">
         <button onclick="copyToClipboard_{component_id}()" class="copy-button">
             Скопировать
         </button>
-        
-        <textarea id="reportText_{component_id}" style="position: absolute; left: -9999px; opacity: 0;">{text_to_copy}</textarea>
         
         <div id="copyMessage_{component_id}" style="
             color: green; 
@@ -179,31 +180,45 @@ def copy_to_clipboard_component(text_to_copy):
     
     <script>
         function copyToClipboard_{component_id}() {{
-            var textArea = document.getElementById("reportText_{component_id}");
-            textArea.select();
-            textArea.setSelectionRange(0, 99999);
+            const text = `{escaped_text}`;
             
-            try {{
-                document.execCommand('copy');
-                var message = document.getElementById("copyMessage_{component_id}");
-                message.style.display = "block";
-                setTimeout(function() {{
-                    message.style.display = "none";
-                }}, 2000);
-            }} catch (err) {{
-                console.error('Ошибка копирования: ', err);
+            if (navigator.clipboard && window.isSecureContext) {{
+                navigator.clipboard.writeText(text).then(function() {{
+                    var message = document.getElementById("copyMessage_{component_id}");
+                    message.style.display = "block";
+                    setTimeout(function() {{
+                        message.style.display = "none";
+                    }}, 2000);
+                }}).catch(function(err) {{
+                    console.error('Ошибка копирования: ', err);
+                    fallbackCopy();
+                }});
+            }} else {{
+                fallbackCopy();
+            }}
+            
+            function fallbackCopy() {{
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-999999px";
+                textArea.style.top = "-999999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
                 
-                // Fallback для современных браузеров
-                if (navigator.clipboard) {{
-                    navigator.clipboard.writeText(`{text_to_copy}`).then(function() {{
-                        var message = document.getElementById("copyMessage_{component_id}");
-                        message.style.display = "block";
-                        setTimeout(function() {{
-                            message.style.display = "none";
-                        }}, 2000);
-                    }});
-                }} else {{
+                try {{
+                    document.execCommand('copy');
+                    var message = document.getElementById("copyMessage_{component_id}");
+                    message.style.display = "block";
+                    setTimeout(function() {{
+                        message.style.display = "none";
+                    }}, 2000);
+                }} catch (err) {{
+                    console.error('Fallback: Ошибка копирования', err);
                     alert('Не удалось скопировать текст. Пожалуйста, скопируйте вручную.');
+                }} finally {{
+                    document.body.removeChild(textArea);
                 }}
             }}
         }}
@@ -298,8 +313,8 @@ def main():
     if not st.session_state.get('logged_in', False):
         login_page()
     else:
-        st.sidebar.write(f"Вы вошли как: {st.session_state['username']}")
-        st.sidebar.button("Выйти", on_click=logout)
+        st.write(f"Вы вошли как: {st.session_state['username']}")
+        st.button("Выйти", on_click=logout)
 
         user_state = get_user_state()
 
