@@ -5,7 +5,7 @@ import pyperclip
 def login_page():
     st.header("Добро пожаловать!")
     # Поле для ввода имени (логина). Оно теперь единственное.
-    username = st.text_input("Введите ваше имя (Например, Иван Петров)")
+    username = st.text_input("Введите ваше имя (Например, Константинов Ярослав)")
 
     # Добавляем кнопку "Войти"
     if st.button("Войти"):
@@ -78,7 +78,7 @@ def apply_styles():
                 text-align: center;
             }
             div.stButton > button:hover {
-                background-color: #F5F5F5;
+                background-color: #F0F0F0;
                 border-color: #AAAAAA;
             }
             .stToggle { font-family: 'Calibri', sans-serif; color: #000000; }
