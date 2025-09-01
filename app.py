@@ -1,11 +1,11 @@
 import streamlit as st
-import pyperclip
+import streamlit.components.v1 as components
 
 # ИСПРАВЛЕННАЯ Страница Входа
 def login_page():
     st.header("Добро пожаловать!")
     # Поле для ввода имени (логина). Оно теперь единственное.
-    username = st.text_input("Введите ваше имя (Например, Константинов Ярослав)")
+    username = st.text_input("Введите ваше имя (Например, Иван Петров)")
 
     # Добавляем кнопку "Войти"
     if st.button("Войти"):
@@ -142,18 +142,56 @@ def reset_all():
     user_state['toggles'] = {}
     user_state['report_text'] = ""
 
-def copy_report():
-    # Функция для копирования отчета в буфер обмена
-    user_state = get_user_state()
-    report_text = user_state.get('report_text', "")
-    if report_text:
-        try:
-            pyperclip.copy(report_text)
-            st.success("Отчет скопирован в буфер обмена!")
-        except:
-            st.error("Не удалось скопировать отчет. Попробуйте скопировать вручную.")
-    else:
-        st.warning("Нет отчета для копирования.")
+# --- JavaScript компонент для копирования ---
+def copy_to_clipboard_component(text_to_copy):
+    copy_js = f"""
+    <div>
+        <button onclick="copyToClipboard()" style="
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 8px;
+            font-family: 'Calibri', sans-serif;
+        ">Скопировать</button>
+        
+        <textarea id="reportText" style="position: absolute; left: -9999px;">{text_to_copy}</textarea>
+        
+        <div id="copyMessage" style="
+            color: green; 
+            font-weight: bold; 
+            margin-top: 10px; 
+            display: none;
+        ">Текст скопирован в буфер обмена!</div>
+    </div>
+    
+    <script>
+        function copyToClipboard() {{
+            var textArea = document.getElementById("reportText");
+            textArea.select();
+            textArea.setSelectionRange(0, 99999);
+            
+            try {{
+                document.execCommand('copy');
+                var message = document.getElementById("copyMessage");
+                message.style.display = "block";
+                setTimeout(function() {{
+                    message.style.display = "none";
+                }}, 2000);
+            }} catch (err) {{
+                console.error('Ошибка копирования: ', err);
+                alert('Не удалось скопировать текст');
+            }}
+        }}
+    </script>
+    """
+    components.html(copy_js, height=100)
 
 # --- Логика генерации отчета ---
 def generate_report_text(main_product, toggles):
@@ -200,6 +238,7 @@ def main_page():
             args=('mp',), 
             use_container_width=True
         )
+
 # Правильная версия страницы с продуктами
 def product_submenu_page(product_type, product_list):
     # 1. Сначала получаем записную книжку текущего пользователя
@@ -228,9 +267,7 @@ def product_submenu_page(product_type, product_list):
     with col2:
         st.button("Вернуться", on_click=go_to_main)
 
-# Правильная версия страницы отчета
-# ИСПРАВЛЕННАЯ ВЕРСИЯ страницы отчета
-# ИСПРАВЛЕННАЯ И ПРОСТАЯ ВЕРСИЯ СТРАНИЦЫ ОТЧЕТА
+# ИСПРАВЛЕННАЯ И ПРОСТАЯ ВЕРСИЯ СТРАНИЦЫ ОТЧЕТА С КНОПКОЙ КОПИРОВАНИЯ
 def report_page():
     # 1. Сначала получаем записную книжку текущего пользователя
     user_state = get_user_state()
@@ -240,25 +277,19 @@ def report_page():
     # 2. Берем текст отчета из ЕГО книжки
     report_text = user_state.get('report_text', "Отчет пуст.")
     
-    # 3. ВОТ ГЛАВНОЕ ИЗМЕНЕНИЕ!
-    # Мы используем стандартный элемент Streamlit "текстовое поле".
-    # Он идеально подходит для отображения и копирования текста.
+    # 3. Отображаем текст отчета
     st.text_area(
         label="Отчет для копирования:", 
         value=report_text, 
-        height=300, # Можете подобрать удобную высоту
+        height=300,
         help="Нажмите на текст, затем Ctrl+C (или Cmd+C), чтобы скопировать"
     )
 
-    # 4. Добавляем кнопки в две колонки
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.button("Скопировать", on_click=copy_report)
-    
-    with col2:
-        st.button("Сбросить", on_click=reset_all)
+    # 4. Добавляем JavaScript кнопку копирования
+    copy_to_clipboard_component(report_text)
 
+    # 5. Кнопку "Сбросить" оставляем
+    st.button("Сбросить", on_click=reset_all)
 
 # --- Главная функция приложения ---
 def main():
@@ -286,9 +317,4 @@ def main():
         elif user_state['page'] == 'kk':
             product_submenu_page("КК", PRODUCTS_KK)
         elif user_state['page'] == 'mp':
-            product_submenu_page("МП", PRODUCTS_MP)
-        elif user_state['page'] == 'report':
-            report_page()
-
-if __name__ == "__main__":
-    main()
+            product_submenu_page("
