@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit.components.v1 as components
 
 # ИСПРАВЛЕННАЯ Страница Входа
 def login_page():
@@ -92,6 +91,20 @@ def apply_styles():
                 white-space: pre-wrap;
                 background-color: #FAFAFA;
             }
+            .copy-button {
+                background-color: #4CAF50;
+                border: none;
+                color: white;
+                padding: 10px 20px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+                margin: 4px 2px;
+                cursor: pointer;
+                border-radius: 8px;
+                font-family: 'Calibri', sans-serif;
+            }
         </style>
     """, unsafe_allow_html=True)
 
@@ -144,26 +157,19 @@ def reset_all():
 
 # --- JavaScript компонент для копирования ---
 def copy_to_clipboard_component(text_to_copy):
+    # Создаем уникальный ID для каждого компонента
+    import random
+    component_id = f"copy_component_{random.randint(1000, 9999)}"
+    
     copy_js = f"""
-    <div>
-        <button onclick="copyToClipboard()" style="
-            background-color: #4CAF50;
-            border: none;
-            color: white;
-            padding: 10px 20px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            margin: 4px 2px;
-            cursor: pointer;
-            border-radius: 8px;
-            font-family: 'Calibri', sans-serif;
-        ">Скопировать</button>
+    <div id="{component_id}">
+        <button onclick="copyToClipboard_{component_id}()" class="copy-button">
+            Скопировать
+        </button>
         
-        <textarea id="reportText" style="position: absolute; left: -9999px;">{text_to_copy}</textarea>
+        <textarea id="reportText_{component_id}" style="position: absolute; left: -9999px; opacity: 0;">{text_to_copy}</textarea>
         
-        <div id="copyMessage" style="
+        <div id="copyMessage_{component_id}" style="
             color: green; 
             font-weight: bold; 
             margin-top: 10px; 
@@ -172,26 +178,38 @@ def copy_to_clipboard_component(text_to_copy):
     </div>
     
     <script>
-        function copyToClipboard() {{
-            var textArea = document.getElementById("reportText");
+        function copyToClipboard_{component_id}() {{
+            var textArea = document.getElementById("reportText_{component_id}");
             textArea.select();
             textArea.setSelectionRange(0, 99999);
             
             try {{
                 document.execCommand('copy');
-                var message = document.getElementById("copyMessage");
+                var message = document.getElementById("copyMessage_{component_id}");
                 message.style.display = "block";
                 setTimeout(function() {{
                     message.style.display = "none";
                 }}, 2000);
             }} catch (err) {{
                 console.error('Ошибка копирования: ', err);
-                alert('Не удалось скопировать текст');
+                
+                // Fallback для современных браузеров
+                if (navigator.clipboard) {{
+                    navigator.clipboard.writeText(`{text_to_copy}`).then(function() {{
+                        var message = document.getElementById("copyMessage_{component_id}");
+                        message.style.display = "block";
+                        setTimeout(function() {{
+                            message.style.display = "none";
+                        }}, 2000);
+                    }});
+                }} else {{
+                    alert('Не удалось скопировать текст. Пожалуйста, скопируйте вручную.');
+                }}
             }}
         }}
     </script>
     """
-    components.html(copy_js, height=100)
+    st.markdown(copy_js, unsafe_allow_html=True)
 
 # --- Логика генерации отчета ---
 def generate_report_text(main_product, toggles):
@@ -202,22 +220,12 @@ def generate_report_text(main_product, toggles):
     return "\n".join(report_lines)
 
 # --- Страницы приложения ---
-# НОВАЯ, НАДЕЖНАЯ ВЕРСИЯ ФУНКЦИИ main_page
 def main_page():
     st.header("Выберите основной продукт")
 
-    # 1. Создаем наш "умный стеллаж" из трёх колонок.
-    # Мы делим ширину в пропорции 1:4:1.
-    # Это значит, что центральная колонка будет в 4 раза шире боковых.
-    # Боковые колонки будут пустыми "распорками".
     left_space, main_content, right_space = st.columns([1, 4, 1])
 
-    # 2. Теперь мы говорим: "Всё, что дальше, клади в центральную колонку".
     with main_content:
-        
-        # 3. Создаем наши кнопки.
-        # Ключевой параметр use_container_width=True заставляет кнопку
-        # растянуться на ВСЮ ширину своей колонки.
         st.button(
             "ДК", 
             on_click=go_to_page, 
@@ -239,19 +247,16 @@ def main_page():
             use_container_width=True
         )
 
-# Правильная версия страницы с продуктами
 def product_submenu_page(product_type, product_list):
-    # 1. Сначала получаем записную книжку текущего пользователя
     user_state = get_user_state()
     
     st.header(f"Дополнительные продукты для «{product_type}»")
     
     for product in product_list:
-        # 2. Работаем с галочками из ЕГО книжки
         user_state['toggles'][product] = st.toggle(
             product,
             value=user_state['toggles'].get(product, False),
-            key=f"{st.session_state['username']}_{product_type}_{product}" # Уникальный ключ для каждого пользователя!
+            key=f"{st.session_state['username']}_{product_type}_{product}"
         )
     
     st.divider()
@@ -259,7 +264,6 @@ def product_submenu_page(product_type, product_list):
     col1, col2 = st.columns(2)
     with col1:
         if st.button("Сформировать отчет"):
-            # 3. Генерируем отчет на основе ЕГО галочек
             user_state['report_text'] = generate_report_text(product_type, user_state['toggles'])
             user_state['page'] = 'report'
             st.rerun()
@@ -267,17 +271,13 @@ def product_submenu_page(product_type, product_list):
     with col2:
         st.button("Вернуться", on_click=go_to_main)
 
-# ИСПРАВЛЕННАЯ И ПРОСТАЯ ВЕРСИЯ СТРАНИЦЫ ОТЧЕТА С КНОПКОЙ КОПИРОВАНИЯ
 def report_page():
-    # 1. Сначала получаем записную книжку текущего пользователя
     user_state = get_user_state()
 
     st.header("Сформированный отчет")
     
-    # 2. Берем текст отчета из ЕГО книжки
     report_text = user_state.get('report_text', "Отчет пуст.")
     
-    # 3. Отображаем текст отчета
     st.text_area(
         label="Отчет для копирования:", 
         value=report_text, 
@@ -285,10 +285,9 @@ def report_page():
         help="Нажмите на текст, затем Ctrl+C (или Cmd+C), чтобы скопировать"
     )
 
-    # 4. Добавляем JavaScript кнопку копирования
+    # Добавляем JavaScript кнопку копирования
     copy_to_clipboard_component(report_text)
 
-    # 5. Кнопку "Сбросить" оставляем
     st.button("Сбросить", on_click=reset_all)
 
 # --- Главная функция приложения ---
@@ -296,20 +295,14 @@ def main():
     apply_styles()
     initialize_global_state()
 
-    # Сначала проверяем, вошел ли пользователь в систему
     if not st.session_state.get('logged_in', False):
-        login_page() # Если не вошел, показываем страницу входа
+        login_page()
     else:
-        # Если вошел, то показываем калькулятор
-        
-        # Добавим сбоку имя пользователя и кнопку "Выйти" для удобства
         st.sidebar.write(f"Вы вошли как: {st.session_state['username']}")
         st.sidebar.button("Выйти", on_click=logout)
 
-        # Получаем личную "записную книжку" текущего пользователя
         user_state = get_user_state()
 
-        # А теперь показываем нужную страницу калькулятора
         if user_state['page'] == 'main':
             main_page()
         elif user_state['page'] == 'dk':
@@ -317,4 +310,9 @@ def main():
         elif user_state['page'] == 'kk':
             product_submenu_page("КК", PRODUCTS_KK)
         elif user_state['page'] == 'mp':
-            product_submenu_page("
+            product_submenu_page("МП", PRODUCTS_MP)
+        elif user_state['page'] == 'report':
+            report_page()
+
+if __name__ == "__main__":
+    main()
