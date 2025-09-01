@@ -1,2 +1,2 @@
-streamlit
-streamlit-components-html
+streamlit>=1.28.0
+streamlit-components-html>=1.0.0
