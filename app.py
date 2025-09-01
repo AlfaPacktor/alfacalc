@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 
 # ИСПРАВЛЕННАЯ Страница Входа
 def login_page():
@@ -155,76 +156,69 @@ def reset_all():
     user_state['toggles'] = {}
     user_state['report_text'] = ""
 
-# --- JavaScript компонент для копирования ---
+# --- Компонент для копирования ---
 def copy_to_clipboard_component(text_to_copy):
-    # Создаем уникальный ID для каждого компонента
     import random
-    component_id = f"copy_component_{random.randint(1000, 9999)}"
+    component_id = random.randint(1000, 9999)
     
-    # Экранируем текст для JavaScript
-    escaped_text = text_to_copy.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n').replace('\r', '\\r')
-    
-    copy_js = f"""
-    <div id="{component_id}">
-        <button onclick="copyToClipboard_{component_id}()" class="copy-button">
+    html_code = f"""
+    <div style="margin: 10px 0;">
+        <button id="copyBtn_{component_id}" onclick="copyToClipboard_{component_id}()" 
+                style="background-color: #4CAF50; border: none; color: white; padding: 10px 20px; 
+                       text-align: center; text-decoration: none; display: inline-block; 
+                       font-size: 16px; margin: 4px 2px; cursor: pointer; border-radius: 8px; 
+                       font-family: 'Calibri', sans-serif;">
             Скопировать
         </button>
-        
-        <div id="copyMessage_{component_id}" style="
-            color: green; 
-            font-weight: bold; 
-            margin-top: 10px; 
-            display: none;
-        ">Текст скопирован в буфер обмена!</div>
+        <div id="copyMessage_{component_id}" style="color: green; font-weight: bold; margin-top: 10px; display: none;">
+            Текст скопирован в буфер обмена!
+        </div>
     </div>
     
     <script>
         function copyToClipboard_{component_id}() {{
-            const text = `{escaped_text}`;
+            const text = `{text_to_copy}`;
             
             if (navigator.clipboard && window.isSecureContext) {{
                 navigator.clipboard.writeText(text).then(function() {{
-                    var message = document.getElementById("copyMessage_{component_id}");
-                    message.style.display = "block";
+                    document.getElementById("copyMessage_{component_id}").style.display = "block";
                     setTimeout(function() {{
-                        message.style.display = "none";
+                        document.getElementById("copyMessage_{component_id}").style.display = "none";
                     }}, 2000);
                 }}).catch(function(err) {{
-                    console.error('Ошибка копирования: ', err);
-                    fallbackCopy();
+                    fallbackCopy_{component_id}(text);
                 }});
             }} else {{
-                fallbackCopy();
+                fallbackCopy_{component_id}(text);
             }}
+        }}
+        
+        function fallbackCopy_{component_id}(text) {{
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            textArea.style.top = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
             
-            function fallbackCopy() {{
-                const textArea = document.createElement("textarea");
-                textArea.value = text;
-                textArea.style.position = "fixed";
-                textArea.style.left = "-999999px";
-                textArea.style.top = "-999999px";
-                document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
-                
-                try {{
-                    document.execCommand('copy');
-                    var message = document.getElementById("copyMessage_{component_id}");
-                    message.style.display = "block";
-                    setTimeout(function() {{
-                        message.style.display = "none";
-                    }}, 2000);
-                }} catch (err) {{
-                    console.error('Fallback: Ошибка копирования', err);
-                    alert('Не удалось скопировать текст. Пожалуйста, скопируйте вручную.');
-                }} finally {{
-                    document.body.removeChild(textArea);
-                }}
+            try {{
+                document.execCommand('copy');
+                document.getElementById("copyMessage_{component_id}").style.display = "block";
+                setTimeout(function() {{
+                    document.getElementById("copyMessage_{component_id}").style.display = "none";
+                }}, 2000);
+            }} catch (err) {{
+                alert('Не удалось скопировать текст. Пожалуйста, скопируйте вручную.');
+            }} finally {{
+                document.body.removeChild(textArea);
             }}
         }}
     </script>
     """
-    st.markdown(copy_js, unsafe_allow_html=True)
+    
+    components.html(html_code, height=100)
 
 # --- Логика генерации отчета ---
 def generate_report_text(main_product, toggles):
@@ -296,11 +290,11 @@ def report_page():
     st.text_area(
         label="Отчет для копирования:", 
         value=report_text, 
-        height=300,
+        height=200,
         help="Нажмите на текст, затем Ctrl+C (или Cmd+C), чтобы скопировать"
     )
 
-    # Добавляем JavaScript кнопку копирования
+    # Добавляем кнопку копирования
     copy_to_clipboard_component(report_text)
 
     st.button("Сбросить", on_click=reset_all)
