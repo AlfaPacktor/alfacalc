@@ -53,32 +53,19 @@ def apply_styles():
         <style>
             .main { background-color: #FFFFFF; }
             
-            /* --- НОВЫЕ ПРАВИЛА ДЛЯ "КОРОБКИ" С КНОПКАМИ --- */
-            
-                
-                /* 2. Ставим "коробку" ровно по центру с помощью магии auto-отступов */
+            .main-menu-container {
                 margin-left: auto;
                 margin-right: auto;
                 margin-top: 20px;
-
-                /* 3. Ограничиваем максимальную ширину на очень больших экранах,
-                   чтобы кнопки не были гигантскими. */
                 max-width: 500px; 
             }
             
-            /* --- НОВЫЕ ПРАВИЛА ДЛЯ САМИХ КНОПОК ВНУТРИ "КОРОБКИ" --- */
-            
-
-            /* --- ПРАВИЛА ДЛЯ МАЛЕНЬКИХ ЭКРАНОВ (ТЕЛЕФОНОВ) --- */
-            /* Эта инструкция сработает, только если ширина экрана 600px или меньше */
             @media (max-width: 600px) {
                 .main-menu-container {
-                    /* На маленьких экранах делаем "коробку" чуть шире для удобства */
                     width: 95%; 
                 }
             }
 
-            /* --- Остальные стили для других элементов оставляем без изменений --- */
             div.stButton > button {
                 height: 50px;
                 border: 1px solid #CCCCCC;
@@ -90,7 +77,7 @@ def apply_styles():
                 text-align: center;
             }
             div.stButton > button:hover {
-                background-color: [jg:пароль_(regexp)_150]
+                background-color: #F0F0F0;
                 border-color: #AAAAAA;
             }
             .stToggle { font-family: 'Calibri', sans-serif; color: #000000; }
@@ -212,7 +199,7 @@ def product_submenu_page(product_type, product_list):
         user_state['toggles'][product] = st.toggle(
             product,
             value=user_state['toggles'].get(product, False),
-            key=f"{st.session_state.username}_{product_type}_{product}" # Уникальный ключ для каждого пользователя!
+            key=f"{st.session_state['username']}_{product_type}_{product}" # Уникальный ключ для каждого пользователя!
         )
     
     st.divider()
@@ -260,13 +247,13 @@ def main():
     initialize_global_state()
 
     # Сначала проверяем, вошел ли пользователь в систему
-    if not st.session_state.get('logged_in'):
+    if not st.session_state.get('logged_in', False):
         login_page() # Если не вошел, показываем страницу входа
     else:
         # Если вошел, то показываем калькулятор
         
         # Добавим сбоку имя пользователя и кнопку "Выйти" для удобства
-        st.sidebar.success(f"Вы вошли как: {st.session_state.username}")
+        st.sidebar.write(f"Вы вошли как: {st.session_state['username']}")
         st.sidebar.button("Выйти", on_click=logout)
 
         # Получаем личную "записную книжку" текущего пользователя
@@ -286,7 +273,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
